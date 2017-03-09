@@ -17,7 +17,7 @@ default: $(GIT_HOOKS) computepi.o
 	$(CC) $(CFLAGS) computepi.o time_test.c -DOPENMP_4 -o time_test_openmp_4
 	$(CC) $(CFLAGS) computepi.o time_test.c -DAVX -o time_test_avx
 	$(CC) $(CFLAGS) computepi.o time_test.c -DAVXUNROLL -o time_test_avxunroll
-	$(CC) $(CFLAGS) computepi.o benchmark_clock_gettime.c -o benchmark_clock_gettime
+	$(CC) $(CFLAGS) computepi.o benchmark_clock_gettime.c -o benchmark_clock_gettime -lm
 
 .PHONY: clean default
 
@@ -31,11 +31,17 @@ check: default
 	time ./time_test_avx
 	time ./time_test_avxunroll
 
-gencsv: default
-	for i in `seq 100 5000 25000`; do \
+gencsv: rm_file
+	for i in `seq 100 300 100000`; do \
 		printf "%d," $$i;\
 		./benchmark_clock_gettime $$i; \
-	done > result_clock_gettime.csv	
+	done > result.csv	
+
+plot: result.csv
+	gnuplot scripts/runtime.gp
+
+rm_file: 
+	rm -rf result.csv error.txt
 
 clean:
 	rm -f $(EXECUTABLE) *.o *.s result_clock_gettime.csv
