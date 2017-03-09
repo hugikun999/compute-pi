@@ -1,8 +1,22 @@
 #include <stdio.h>
 #include <immintrin.h>
 #include <omp.h>
+#include <math.h>
 #include "computepi.h"
 
+/* mathematical function*/
+double arctan(double x,int N)
+{
+    double answer = 0.0;
+    double tmp = 0.0;
+    for (int i = 0; i < N; i += 1) {
+        answer += pow(-1,(double) i) * pow(x, (double) (2*i + 1)) / (double) (2*i +1);
+    }
+
+    return answer;
+}
+
+/* method of computing pi */
 double compute_pi_baseline(size_t N)
 {
     double pi = 0.0;
@@ -115,5 +129,13 @@ double compute_pi_avx_unroll(size_t N)
           tmp2[0] + tmp2[1] + tmp2[2] + tmp2[3] +
           tmp3[0] + tmp3[1] + tmp3[2] + tmp3[3] +
           tmp4[0] + tmp4[1] + tmp4[2] + tmp4[3];
+    return pi * 4.0;
+}
+
+double Machin_like(size_t N)
+{
+    double pi = 0.0;
+
+    pi = 4 * arctan((double)0.2, N) - arctan((double)1/239, N);
     return pi * 4.0;
 }

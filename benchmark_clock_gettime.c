@@ -62,8 +62,8 @@ int main(int argc, char const *argv[])
         if (scope[0] <= time[0] && time[0] <= scope[1])
             break;
     }
-    error = (result- M_PI) / M_PI;
-    fprintf(fp, "%e, ", error);
+    error = result- M_PI;
+    fprintf(fp, "%.25lf, ", error);
     printf("%lf, ", (double) time[0]);
 
     // OpenMP with 2 threads
@@ -85,8 +85,8 @@ int main(int argc, char const *argv[])
         if (scope[0] <= time[0] && time[0] <= scope[1])
             break;
     }
-    error = (result - M_PI) / M_PI;
-    fprintf(fp, "%e, ", error);
+    error = result - M_PI;
+    fprintf(fp, "%.25lf, ", error);
     printf("%lf, ", (double) time[0]);
 
     // OpenMP with 4 threads
@@ -108,8 +108,8 @@ int main(int argc, char const *argv[])
         if (scope[0] <= time[0] && time[0] <= scope[1])
             break;
     }
-    error = (result - M_PI) / M_PI;
-    fprintf(fp, "%e, ", error);
+    error = result - M_PI;
+    fprintf(fp, "%.25lf, ", error);
     printf("%lf, ", (double) time[0]);
 
     // AVX SIMD
@@ -131,8 +131,8 @@ int main(int argc, char const *argv[])
         if (scope[0] <= time[0] && time[0] <= scope[1])
             break;
     }
-    error = (result - M_PI) / M_PI;
-    fprintf(fp, "%e, ", error);
+    error = result - M_PI;
+    fprintf(fp, "%.25lf, ", error);
     printf("%lf, ", (double) time[0]);
 
     // AVX SIMD + Loop unrolling
@@ -154,8 +154,31 @@ int main(int argc, char const *argv[])
         if (scope[0] <= time[0] && time[0] <= scope[1])
             break;
     }
-    error = (result - M_PI) / M_PI;
-    fprintf(fp, "%e\n", error);
+    error = result - M_PI;
+    fprintf(fp, "%.25lf, ", error);
+    printf("%lf, ", (double) time[0]);
+
+    // Machin-like formula
+    for (i = 0; i < loop; i++) {
+        clock_gettime(CLOCK_ID, &start);
+        Machin_like(N);
+        clock_gettime(CLOCK_ID, &end);
+        time[i] = (end.tv_sec - start.tv_sec) +
+                  (end.tv_nsec - start.tv_nsec) / ONE_SEC;
+    }
+    Deviation(time, loop);
+
+    while(1) {
+        clock_gettime(CLOCK_ID, &start);
+        result = Machin_like(N);
+        clock_gettime(CLOCK_ID, &end);
+        time[0] = (end.tv_sec - start.tv_sec) +
+                  (end.tv_nsec - start.tv_nsec) / ONE_SEC;
+        if (scope[0] <= time[0] && time[0] <= scope[1])
+            break;
+    }
+    error = result - M_PI;
+    fprintf(fp, "%.25lf\n", error);
     printf("%lf\n", (double) time[0]);
 
     fclose(fp);
