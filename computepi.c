@@ -8,7 +8,6 @@
 double arctan(double x,int N)
 {
     double answer = 0.0;
-    double tmp = 0.0;
     for (int i = 0; i < N; i += 1) {
         answer += pow(-1,(double) i) * pow(x, (double) (2*i + 1)) / (double) (2*i +1);
     }
@@ -48,23 +47,32 @@ double compute_pi_avx(size_t N)
 {
     double pi = 0.0;
     double dt = 1.0 / N;
+    int record;
     register __m256d ymm0, ymm1, ymm2, ymm3, ymm4;
     ymm0 = _mm256_set1_pd(1.0);
     ymm1 = _mm256_set1_pd(dt);
     ymm2 = _mm256_set_pd(dt * 3, dt * 2, dt * 1, 0.0);
     ymm4 = _mm256_setzero_pd();             // sum of pi
 
-    for (int i = 0; i <= N - 4; i += 4) {
+    for (int i = 0; i < N - 4; i += 4) {
         ymm3 = _mm256_set1_pd(i * dt);      // i*dt, i*dt, i*dt, i*dt
         ymm3 = _mm256_add_pd(ymm3, ymm2);   // x = i*dt+3*dt, i*dt+2*dt, i*dt+dt, i*dt+0.0
         ymm3 = _mm256_mul_pd(ymm3, ymm3);   // x^2 = (i*dt+3*dt)^2, (i*dt+2*dt)^2, ...
         ymm3 = _mm256_add_pd(ymm0, ymm3);   // 1+x^2 = 1+(i*dt+3*dt)^2, 1+(i*dt+2*dt)^2, ...
         ymm3 = _mm256_div_pd(ymm1, ymm3);   // dt/(1+x^2)
         ymm4 = _mm256_add_pd(ymm4, ymm3);   // pi += dt/(1+x^2)
+        record = i;
     }
+
     double tmp[4] __attribute__((aligned(32)));
     _mm256_store_pd(tmp, ymm4);             // move packed float64 values to  256-bit aligned memory location
     pi += tmp[0] + tmp[1] + tmp[2] + tmp[3];
+
+    for (; record < N; record++) {
+        double x = (double) record / N;      // x = ti = a+(b-a)*i/N = i/N
+        pi += dt / (1.0 + x * x);       // integrate 1/(1+x^2), i = 0....N
+    }
+
     return pi * 4.0;
 }
 
@@ -72,6 +80,7 @@ double compute_pi_avx_unroll(size_t N)
 {
     double pi = 0.0;
     double dt = 1.0 / N;
+    int record;
     register __m256d ymm0, ymm1, ymm2, ymm3, ymm4,
              ymm5, ymm6, ymm7, ymm8, ymm9,
              ymm10,ymm11, ymm12, ymm13, ymm14;
@@ -86,7 +95,7 @@ double compute_pi_avx_unroll(size_t N)
     ymm8 = _mm256_setzero_pd();             // third sum of pi
     ymm9 = _mm256_setzero_pd();             // fourth sum of pi
 
-    for (int i = 0; i <= N - 16; i += 16) {
+    for (int i = 0; i < N - 16; i += 16) {
         ymm14 = _mm256_set1_pd(i * dt);
 
         ymm10 = _mm256_add_pd(ymm14, ymm2);
@@ -113,6 +122,7 @@ double compute_pi_avx_unroll(size_t N)
         ymm7 = _mm256_add_pd(ymm7, ymm11);
         ymm8 = _mm256_add_pd(ymm8, ymm12);
         ymm9 = _mm256_add_pd(ymm9, ymm13);
+        record = i;
     }
 
     double tmp1[4] __attribute__((aligned(32)));
@@ -129,6 +139,11 @@ double compute_pi_avx_unroll(size_t N)
           tmp2[0] + tmp2[1] + tmp2[2] + tmp2[3] +
           tmp3[0] + tmp3[1] + tmp3[2] + tmp3[3] +
           tmp4[0] + tmp4[1] + tmp4[2] + tmp4[3];
+
+    for (; record < N; record++) {
+        double x = (double) record / N;      // x = ti = a+(b-a)*i/N = i/N
+        pi += dt / (1.0 + x * x);       // integrate 1/(1+x^2), i = 0....N
+    }
     return pi * 4.0;
 }
 
